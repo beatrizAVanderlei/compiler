@@ -50,12 +50,13 @@ class Lexer:
                     if match:
                         matched = True
                         value = match.group(0)
-                        self.tokens.append(Token(token_type=token_type, value=value))
+                        token = Token(token_type=token_type, value=value)
+                        self.tokens.append(token)
 
                         if token_type == "IDENTIFIER":
-                            self.symbol_table[value] = {
-                                "type": None,
-                                "value": None,
+                            self.symbol_table[token] = {
+                                "variable_type": None,
+                                "variable_value": None,
                                 "line": self.current_line,
                             }
 

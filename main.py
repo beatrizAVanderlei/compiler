@@ -1,8 +1,8 @@
 from lexer import Lexer
 
 
-def main():
-    with open("code.in", "r") as file:
+def main(filename):
+    with open(filename, "r") as file:
         code_string = file.read()
 
     lexer = Lexer(code_string)
@@ -15,9 +15,9 @@ def main():
     print("\nTabela de Símbolos:")
     for identifier, info in lexer.symbol_table.items():
         print(
-            f"Identifier: {identifier} - Type: {info['type']} - Value: {info['value']} - Line: {info['line']}"
+            f"Identifier: {identifier} - Type: {info['variable_type']} - Value: {info['variable_value']} - Line: {info['line']}"
         )
 
 
 if __name__ == "__main__":
-    main()
+    main("code.in")
