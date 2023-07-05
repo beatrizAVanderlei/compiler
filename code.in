@@ -1,6 +1,29 @@
+function complex_math(int a, int b) -> int {
+    return (a * b) + (10 / (a - b));
+}
+
 int x = 10;
-int y = 5;
-x + y;
-x - y;
-y * x;
-x / y;
+int y = 20;
+int z = complex_math(x, y);
+print(z);
+
+function is_adult(int age) -> bool {
+    if (age >= 18) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+int age = 20;
+print(is_adult(age))
+
+procedure count_until_n(int n) {
+    int i = 0;
+    while (i < n) {
+        print(i);
+        i = i + 1;
+    }
+}
+
+count_until_10(20)

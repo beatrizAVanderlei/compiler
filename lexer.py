@@ -1,4 +1,5 @@
 import re
+from typing import Any
 
 
 class Token:
@@ -7,7 +8,7 @@ class Token:
         self.value = value
 
     def __repr__(self):
-        return f"Token({self.token_type}, {self.value})"
+        return f"Token({self.token_type}, '{self.value}')"
 
 
 class Lexer:
@@ -15,8 +16,10 @@ class Lexer:
         self.code = code
         self.current_line = 0
         self.tokens: list[Token] = []
-        self.symbol_table = {}
+        self.symbol_table: dict[Token, dict[str, Any]] = {}
+        # the order of the patterns matters
         self.patterns: list[tuple[str, str]] = [
+            # reserved tokens
             (r"\bif\b", "IF"),
             (r"\belse\b", "ELSE"),
             (r"\bwhile\b", "WHILE"),
@@ -24,16 +27,37 @@ class Lexer:
             (r"\bbool\b", "BOOL"),
             (r"\btrue\b", "TRUE"),
             (r"\bfalse\b", "FALSE"),
-            (r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", "IDENTIFIER"),
-            (r"\b[0-9]+\b", "INTEGER"),
+            (r"\bnot\b", "NOT"),
+            (r"\band\b", "AND"),
+            (r"\bor\b", "OR"),
+            (r"\bprint\b", "PRINT"),
+            (r"\breturn\b", "RETURN"),
+            (r"\bfunction\b", "FUNCTION"),
+            (r"\bprocedure\b", "PROCEDURE"),
+            (r"\bbreak\b", "BREAK"),
+            (r"\bcontinue\b", "CONTINUE"),
+            # symbols
+            (r"->", "ARROW"),
+            (r"==", "EQUAL"),
+            (r"!=", "DIFFERENT"),
+            (r">=", "GREATER_OR_EQUAL"),
+            (r"<=", "LESS_OR_EQUAL"),
             (r"\+", "PLUS"),
             (r"-", "MINUS"),
             (r"\*", "MULTIPLY"),
             (r"/", "DIVIDE"),
             (r"=", "ASSIGN"),
             (r";", "SEMICOLON"),
+            (r",", "COLON"),
             (r"\(", "LPAREN"),
             (r"\)", "RPAREN"),
+            (r">", "GREATER"),
+            (r"<", "LESS"),
+            (r"\{", "LBRACE"),
+            (r"\}", "RBRACE"),
+            # others
+            (r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", "IDENTIFIER"),
+            (r"\b[0-9]+\b", "INTEGER"),
         ]
 
     def lex(self):
