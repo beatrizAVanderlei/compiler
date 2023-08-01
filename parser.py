@@ -61,20 +61,23 @@ class Parser:
         elif self.current_token.token_type == "CONTINUE":
             self.continue_statement()
         elif self.current_token.token_type == "IDENTIFIER":
-            # Checa se a linha começa com uma chamada de função/procedimento ou uma atribuição
             if self.tokens[self.index + 1].token_type == "LPAREN":
                 self.function_or_procedure_call()
             elif self.tokens[self.index + 1].token_type == "ASSIGN":
                 self.assignment_statement()
             else:
-                self.error()
+                self.expression_statement()  # Expressão solta
         else:
             self.error()
 
+    def expression_statement(self):
+        self.expression()
+        self.match("SEMICOLON")
+
     def assignment_statement(self):
-        self.identifier()
-        self.match("ASSIGN")
         self.variable_value()
+        self.match("ASSIGN")
+        self.expression()  # Modificado para permitir expressões na atribuição
         self.match("SEMICOLON")
 
     def identifier(self):
@@ -96,6 +99,10 @@ class Parser:
             self.number()
         elif self.current_token.token_type in ["TRUE", "FALSE"]:
             self.boolean()
+        elif self.current_token.token_type == "LPAREN":
+            self.match("LPAREN")
+            self.expression()
+            self.match("RPAREN")
         else:
             self.error()
 
@@ -116,7 +123,7 @@ class Parser:
         # Verifica se há uma atribuição após a declaração de variável
         if self.current_token.token_type == "ASSIGN":
             self.match("ASSIGN")
-            self.variable_value()
+            self.expression()  # Alterado aqui para permitir expressões na atribuição
         self.match("SEMICOLON")
 
     def print_statement(self):
@@ -128,31 +135,41 @@ class Parser:
         self.match("SEMICOLON")
 
     def argument_list(self):
-        self.variable_value()
+        self.expression()
         while self.current_token.token_type == "COLON":
             self.match("COLON")
-            self.variable_value()
+            self.expression()
 
     def return_statement(self):
         self.match("RETURN")
-        self.variable_value()
+        self.expression()
         self.match("SEMICOLON")
 
+    def expression(self):
+        self.boolean_expression()
+
+    def function_or_procedure_call_as_argument(self):
+        self.identifier()
+        self.match("LPAREN")
+        if self.current_token.token_type != "RPAREN":
+            self.argument_list()
+        self.match("RPAREN")
+
     def parameters(self):
-        if self.current_token.token_type in ["INT", "BOOL"]:
+        self.tipo()
+        self.identifier()
+        while self.current_token.token_type == "COMMA":
+            self.match("COMMA")
             self.tipo()
             self.identifier()
-            while self.current_token.token_type == "COMMA":
-                self.match("COMMA")
-                self.tipo()
-                self.identifier()
 
     def function_or_procedure(self):
         if self.current_token.token_type == "FUNCTION":
             self.match("FUNCTION")
             self.identifier()
             self.match("LPAREN")
-            self.parameters()
+            if self.current_token.token_type != "RPAREN":
+                self.parameters()  # Permite a lista de parâmetros
             self.match("RPAREN")
             self.match("ARROW")
             self.tipo()
@@ -164,7 +181,8 @@ class Parser:
             self.match("PROCEDURE")
             self.identifier()
             self.match("LPAREN")
-            self.parameters()
+            if self.current_token.token_type != "RPAREN":
+                self.parameters()  # Permite a lista de parâmetros
             self.match("RPAREN")
             self.match("ARROW")
             self.tipo()
@@ -180,20 +198,24 @@ class Parser:
         if self.current_token.token_type != "RPAREN":
             self.argument_list()
         self.match("RPAREN")
+        self.match("SEMICOLON")
 
     def if_statement(self):
         self.match("IF")
         self.match("LPAREN")
-        self.boolean_expression()  # Implementar o método boolean_expression
+        self.boolean_expression()
         self.match("RPAREN")
         self.match("LBRACE")
         self.conditional_scope()
         self.match("RBRACE")
-        if self.current_token.token_type == "ELSE":
+
+        # Verifica se há a cláusula "else" após o bloco "if"
+        if self.current_token is not None and self.current_token.token_type == "ELSE":
             self.match("ELSE")
             self.match("LBRACE")
             self.conditional_scope()
             self.match("RBRACE")
+
 
     def while_loop(self):
         self.match("WHILE")
@@ -213,20 +235,37 @@ class Parser:
         self.match("SEMICOLON")
 
     def boolean_expression(self):
-        self.variable_value()
-        operator = self.current_token.token_type
-        if operator in ["EQUAL", "DIFFERENT", "GREATER", "GREATER_OR_EQUAL", "LESS", "LESS_OR_EQUAL", "AND", "OR"]:
-            self.match(operator)
-            self.variable_value()
-        else:
-            self.error()
+        self.arithmetic_expression()
+        while self.current_token.token_type in ["EQUAL", "DIFFERENT", "GREATER", "GREATER_OR_EQUAL", "LESS", "LESS_OR_EQUAL", "AND", "OR"]:
+            self.match(self.current_token.token_type)
+            self.arithmetic_expression()
 
     def arithmetic_expression(self):
-        self.variable_value()
-        operator = self.current_token.token_type
-        if operator in ["PLUS", "MINUS", "MULTIPLY", "DIVIDE"]:
-            self.match(operator)
-            self.variable_value()
+        self.term()
+        while self.current_token.token_type in ["PLUS", "MINUS", "MULTIPLY", "DIVIDE"]:
+            self.match(self.current_token.token_type)
+            self.term()
+
+    def term(self):
+        self.factor()
+        while self.current_token.token_type in ["MULTIPLY", "DIVIDE"]:
+            self.match(self.current_token.token_type)
+            self.factor()
+
+    def factor(self):
+        if self.current_token.token_type == "LPAREN":
+            self.match("LPAREN")
+            self.expression()
+            self.match("RPAREN")
+        elif self.current_token.token_type == "IDENTIFIER":
+            if self.tokens[self.index + 1].token_type == "LPAREN":
+                self.function_or_procedure_call_as_argument()  # Modificado aqui
+            else:
+                self.identifier()
+        elif self.current_token.token_type == "INTEGER":
+            self.number()
+        elif self.current_token.token_type in ["TRUE", "FALSE"]:
+            self.boolean()
         else:
             self.error()
 
