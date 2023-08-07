@@ -1,6 +1,7 @@
 from typing import Any, Dict
 from lexer import Token
 
+
 class Parser:
     class SyntaxError(Exception):
         pass
@@ -9,7 +10,7 @@ class Parser:
         self.index = 0
         self.tokens = None
         self.symbol_table = None
-        self.current_token: Token = None
+        self.current_token: Token | None = None
 
     def parse(self, tokens: list[Token], symbol_table: Dict[Token, Dict[str, Any]]):
         self.tokens = tokens
@@ -22,7 +23,7 @@ class Parser:
 
     def error(self):
         raise SyntaxError(
-            f"Syntax error at line {self.symbol_table[self.current_token]['line']} on token {self.current_token}"
+            f"Syntax error at line {self.current_token.line} on token {self.current_token}"
         )
 
     def consume_token(self):
@@ -75,10 +76,20 @@ class Parser:
         self.match("SEMICOLON")
 
     def assignment_statement(self):
+        variable_token = self.current_token
         self.variable_value()
         self.match("ASSIGN")
+        variable_value = self.current_token.value
+        current_index = self.index
+        self.consume_token()
+        while self.current_token.token_type != "SEMICOLON":
+            variable_value += self.current_token.value
+            self.consume_token()
+        self.index = current_index
+        self.current_token = self.tokens[self.index]
         self.expression()  # Modificado para permitir expressões na atribuição
         self.match("SEMICOLON")
+        self.symbol_table[variable_token].update({"variable_value": variable_value})
 
     def identifier(self):
         self.match("IDENTIFIER")
@@ -106,25 +117,30 @@ class Parser:
         else:
             self.error()
 
-    def variable_declaration(self):
-        self.tipo()
-        self.identifier()
-
-        # Verifica se há uma atribuição após a declaração de variável
-        if self.current_token.token_type == "ASSIGN":
-            self.match("ASSIGN")
-            self.variable_value()
-        self.match("SEMICOLON")
-
     def declaration_or_assignment(self):
+        variable_type = self.current_token.token_type
+        variable_value = None
         self.tipo()
+        variable_token = self.current_token
         self.identifier()
 
         # Verifica se há uma atribuição após a declaração de variável
         if self.current_token.token_type == "ASSIGN":
             self.match("ASSIGN")
+            variable_value = self.current_token.value
+            current_index = self.index
+            self.consume_token()
+            while self.current_token.token_type != "SEMICOLON":
+                variable_value += self.current_token.value
+                self.consume_token()
+            self.index = current_index
+            self.current_token = self.tokens[self.index]
             self.expression()  # Alterado aqui para permitir expressões na atribuição
         self.match("SEMICOLON")
+
+        self.symbol_table[variable_token].update(
+            {"variable_type": variable_type, "variable_value": variable_value}
+        )
 
     def print_statement(self):
         self.match("PRINT")
@@ -156,39 +172,51 @@ class Parser:
         self.match("RPAREN")
 
     def parameters(self):
+        variable_type = self.current_token.token_type
         self.tipo()
+        variable_token = self.current_token
         self.identifier()
-        while self.current_token.token_type == "COMMA":
-            self.match("COMMA")
+        self.symbol_table[variable_token].update({"variable_type": variable_type})
+        while self.current_token.token_type == "COLON":
+            self.match("COLON")
+            variable_type = self.current_token.token_type
             self.tipo()
+            variable_token = self.current_token
             self.identifier()
+            self.symbol_table[variable_token].update({"variable_type": variable_type})
 
     def function_or_procedure(self):
         if self.current_token.token_type == "FUNCTION":
             self.match("FUNCTION")
+            variable_token = self.current_token
             self.identifier()
             self.match("LPAREN")
             if self.current_token.token_type != "RPAREN":
                 self.parameters()  # Permite a lista de parâmetros
             self.match("RPAREN")
             self.match("ARROW")
+            variable_type = self.current_token.token_type
             self.tipo()
             self.match("LBRACE")
             self.function_or_procedure_scope()
             self.return_statement()
             self.match("RBRACE")
+            self.symbol_table[variable_token].update({"variable_type": variable_type})
         elif self.current_token.token_type == "PROCEDURE":
             self.match("PROCEDURE")
+            variable_token = self.current_token
             self.identifier()
             self.match("LPAREN")
             if self.current_token.token_type != "RPAREN":
                 self.parameters()  # Permite a lista de parâmetros
             self.match("RPAREN")
             self.match("ARROW")
+            variable_type = self.current_token.token_type
             self.tipo()
             self.match("LBRACE")
             self.function_or_procedure_scope()
             self.match("RBRACE")
+            self.symbol_table[variable_token].update({"variable_type": variable_type})
         else:
             self.declaration_or_assignment()
 
@@ -216,7 +244,6 @@ class Parser:
             self.conditional_scope()
             self.match("RBRACE")
 
-
     def while_loop(self):
         self.match("WHILE")
         self.match("LPAREN")
@@ -236,19 +263,22 @@ class Parser:
 
     def boolean_expression(self):
         self.arithmetic_expression()
-        while self.current_token.token_type in ["EQUAL", "DIFFERENT", "GREATER", "GREATER_OR_EQUAL", "LESS", "LESS_OR_EQUAL", "AND", "OR"]:
+        while self.current_token.token_type in [
+            "EQUAL",
+            "DIFFERENT",
+            "GREATER",
+            "GREATER_OR_EQUAL",
+            "LESS",
+            "LESS_OR_EQUAL",
+            "AND",
+            "OR",
+        ]:
             self.match(self.current_token.token_type)
             self.arithmetic_expression()
 
     def arithmetic_expression(self):
-        self.term()
-        while self.current_token.token_type in ["PLUS", "MINUS", "MULTIPLY", "DIVIDE"]:
-            self.match(self.current_token.token_type)
-            self.term()
-
-    def term(self):
         self.factor()
-        while self.current_token.token_type in ["MULTIPLY", "DIVIDE"]:
+        while self.current_token.token_type in ["PLUS", "MINUS", "MULTIPLY", "DIVIDE"]:
             self.match(self.current_token.token_type)
             self.factor()
 
@@ -274,7 +304,10 @@ class Parser:
             self.start_of_program()
 
     def conditional_scope(self):
-        while self.current_token.token_type != "RBRACE" and self.current_token.token_type != "ELSE":
+        while (
+            self.current_token.token_type != "RBRACE"
+            and self.current_token.token_type != "ELSE"
+        ):
             self.start_of_program()
 
     def loop_scope(self):

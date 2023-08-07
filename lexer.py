@@ -3,9 +3,10 @@ from typing import Any
 
 
 class Token:
-    def __init__(self, token_type, value):
+    def __init__(self, token_type, value, line):
         self.token_type = token_type
         self.value = value
+        self.line = line
 
     def __repr__(self):
         return f"Token({self.token_type}, '{self.value}')"
@@ -74,7 +75,9 @@ class Lexer:
                     if match:
                         matched = True
                         value = match.group(0)
-                        token = Token(token_type=token_type, value=value)
+                        token = Token(
+                            token_type=token_type, value=value, line=self.current_line
+                        )
                         self.tokens.append(token)
 
                         if token_type == "IDENTIFIER":

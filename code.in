@@ -2,23 +2,24 @@ function complex_math(int a, int b) -> int {
     return (a * b) + (10 / (a - b));
 }
 
-int x = 10;
 int y = 20;
 int z = complex_math(x, y);
 print(z);
 
 function is_adult(int age) -> bool {
+    bool ans = false;
     if (age >= 18) {
-        return true;
+        ans = true;
     } else {
-        return false;
+        ans = false;
     }
+    return ans;
 }
 
 int age = 20;
-print(is_adult(age))
+print(is_adult(age));
 
-procedure count_until_n(int n) {
+procedure count_until_n(int n) -> int {
     int i = 0;
     while (i < n) {
         print(i);
@@ -26,4 +27,4 @@ procedure count_until_n(int n) {
     }
 }
 
-count_until_10(20)
+count_until_10(20);
