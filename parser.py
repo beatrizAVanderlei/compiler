@@ -37,7 +37,9 @@ class Parser:
         if self.current_token.token_type == expected_token:
             self.consume_token()
         else:
-            raise SyntaxError(f"Expected {expected_token}, found {self.current_token}")
+            raise SyntaxError(
+                f"Expected {expected_token}, found {self.current_token} at line {self.current_token.line}"
+            )
 
     def program(self):
         self.start_of_program()
@@ -67,7 +69,7 @@ class Parser:
             elif self.tokens[self.index + 1].token_type == "ASSIGN":
                 self.assignment_statement()
             else:
-                self.expression_statement()  # Expressão solta
+                self.expression_statement()
         else:
             self.error()
 
@@ -87,7 +89,7 @@ class Parser:
             self.consume_token()
         self.index = current_index
         self.current_token = self.tokens[self.index]
-        self.expression()  # Modificado para permitir expressões na atribuição
+        self.expression()
         self.match("SEMICOLON")
         self.symbol_table[variable_token].update({"variable_value": variable_value})
 
@@ -124,7 +126,6 @@ class Parser:
         variable_token = self.current_token
         self.identifier()
 
-        # Verifica se há uma atribuição após a declaração de variável
         if self.current_token.token_type == "ASSIGN":
             self.match("ASSIGN")
             variable_value = self.current_token.value
@@ -135,7 +136,7 @@ class Parser:
                 self.consume_token()
             self.index = current_index
             self.current_token = self.tokens[self.index]
-            self.expression()  # Alterado aqui para permitir expressões na atribuição
+            self.expression()
         self.match("SEMICOLON")
 
         self.symbol_table[variable_token].update(
@@ -192,7 +193,7 @@ class Parser:
             self.identifier()
             self.match("LPAREN")
             if self.current_token.token_type != "RPAREN":
-                self.parameters()  # Permite a lista de parâmetros
+                self.parameters()
             self.match("RPAREN")
             self.match("ARROW")
             variable_type = self.current_token.token_type
@@ -208,7 +209,7 @@ class Parser:
             self.identifier()
             self.match("LPAREN")
             if self.current_token.token_type != "RPAREN":
-                self.parameters()  # Permite a lista de parâmetros
+                self.parameters()
             self.match("RPAREN")
             self.match("ARROW")
             variable_type = self.current_token.token_type
@@ -237,7 +238,6 @@ class Parser:
         self.conditional_scope()
         self.match("RBRACE")
 
-        # Verifica se há a cláusula "else" após o bloco "if"
         if self.current_token is not None and self.current_token.token_type == "ELSE":
             self.match("ELSE")
             self.match("LBRACE")
@@ -247,7 +247,7 @@ class Parser:
     def while_loop(self):
         self.match("WHILE")
         self.match("LPAREN")
-        self.boolean_expression()  # Implementar o método boolean_expression
+        self.boolean_expression()
         self.match("RPAREN")
         self.match("LBRACE")
         self.loop_scope()
@@ -278,7 +278,13 @@ class Parser:
 
     def arithmetic_expression(self):
         self.factor()
-        while self.current_token.token_type in ["PLUS", "MINUS", "MULTIPLY", "DIVIDE"]:
+        while self.current_token.token_type in [
+            "PLUS",
+            "MINUS",
+            "MULTIPLY",
+            "DIVIDE",
+            "MODULE",
+        ]:
             self.match(self.current_token.token_type)
             self.factor()
 
@@ -289,7 +295,7 @@ class Parser:
             self.match("RPAREN")
         elif self.current_token.token_type == "IDENTIFIER":
             if self.tokens[self.index + 1].token_type == "LPAREN":
-                self.function_or_procedure_call_as_argument()  # Modificado aqui
+                self.function_or_procedure_call_as_argument()
             else:
                 self.identifier()
         elif self.current_token.token_type == "INTEGER":

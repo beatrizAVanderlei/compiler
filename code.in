@@ -16,15 +16,21 @@ function is_adult(int age) -> bool {
     return ans;
 }
 
-int age = 20;
-print(is_adult(age));
+while (true or false) {
+    int age = 20;
+    print(is_adult(age));
+    break;
+}
 
-procedure count_until_n(int n) -> int {
+procedure count_until_n(int n, int s) -> int {
     int i = 0;
     while (i < n) {
+        if (i % s == 0 and i != 0) {
+            continue;
+        }
         print(i);
         i = i + 1;
     }
 }
 
-count_until_10(20);
+count_until_10(20, 2);

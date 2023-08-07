@@ -47,6 +47,7 @@ class Lexer:
             (r"-", "MINUS"),
             (r"\*", "MULTIPLY"),
             (r"/", "DIVIDE"),
+            (r"\%", "MODULE"),
             (r"=", "ASSIGN"),
             (r";", "SEMICOLON"),
             (r",", "COLON"),
