@@ -22,7 +22,9 @@ while (true or false) {
     break;
 }
 
-procedure count_until_n(int n, int s) -> int {
+continue;
+
+procedure count_until_n(int n, int s) {
     int i = 0;
     while (i < n) {
         if (i % s == 0 and i != 0) {

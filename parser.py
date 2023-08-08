@@ -34,11 +34,16 @@ class Parser:
             self.current_token = None
 
     def match(self, expected_token):
-        if self.current_token.token_type == expected_token:
-            self.consume_token()
+        if self.current_token:
+            if self.current_token.token_type == expected_token:
+                self.consume_token()
+            else:
+                raise SyntaxError(
+                    f"Expected {expected_token}, found {self.current_token} at line {self.current_token.line}"
+                )
         else:
             raise SyntaxError(
-                f"Expected {expected_token}, found {self.current_token} at line {self.current_token.line}"
+                f"Expected {expected_token}, found EOF at line {self.tokens[-1].line}"
             )
 
     def program(self):
@@ -205,19 +210,14 @@ class Parser:
             self.symbol_table[variable_token].update({"variable_type": variable_type})
         elif self.current_token.token_type == "PROCEDURE":
             self.match("PROCEDURE")
-            variable_token = self.current_token
             self.identifier()
             self.match("LPAREN")
             if self.current_token.token_type != "RPAREN":
                 self.parameters()
             self.match("RPAREN")
-            self.match("ARROW")
-            variable_type = self.current_token.token_type
-            self.tipo()
             self.match("LBRACE")
             self.function_or_procedure_scope()
             self.match("RBRACE")
-            self.symbol_table[variable_token].update({"variable_type": variable_type})
         else:
             self.declaration_or_assignment()
 
