@@ -2,6 +2,13 @@ from typing import Any, Dict
 from lexer import Token
 
 
+Type = str  # Type alias for better readability, can be either "INT" or "BOOL"
+
+
+class SemanticError(Exception):
+    pass
+
+
 class Parser:
     class SyntaxError(Exception):
         pass
@@ -126,27 +133,27 @@ class Parser:
 
     def declaration_or_assignment(self):
         variable_type = self.current_token.token_type
-        variable_value = None
         self.tipo()
         variable_token = self.current_token
         self.identifier()
 
+        # TODO: add scope analysis
+
         if self.current_token.token_type == "ASSIGN":
             self.match("ASSIGN")
-            variable_value = self.current_token.value
-            current_index = self.index
-            self.consume_token()
-            while self.current_token.token_type != "SEMICOLON":
-                variable_value += self.current_token.value
-                self.consume_token()
-            self.index = current_index
-            self.current_token = self.tokens[self.index]
-            self.expression()
-        self.match("SEMICOLON")
+            expression_type = self.expression()
 
-        self.symbol_table[variable_token].update(
-            {"variable_type": variable_type, "variable_value": variable_value}
-        )
+            if variable_type == "INT" and expression_type != "INT":
+                raise SemanticError(
+                    f"Type mismatch: Cannot assign {expression_type} to INT variable"
+                )
+            elif variable_type == "BOOL" and expression_type != "BOOL":
+                raise SemanticError(
+                    f"Type mismatch: Cannot assign {expression_type} to BOOL variable"
+                )
+
+        self.match("SEMICOLON")
+        self.symbol_table[variable_token].update({"variable_type": variable_type})
 
     def print_statement(self):
         self.match("PRINT")
@@ -167,8 +174,8 @@ class Parser:
         self.expression()
         self.match("SEMICOLON")
 
-    def expression(self):
-        self.boolean_expression()
+    def expression(self) -> Type:
+        return self.boolean_expression()
 
     def function_or_procedure_call_as_argument(self):
         self.identifier()
@@ -261,8 +268,8 @@ class Parser:
         self.match("CONTINUE")
         self.match("SEMICOLON")
 
-    def boolean_expression(self):
-        self.arithmetic_expression()
+    def boolean_expression(self) -> Type:
+        expression_type = self.arithmetic_expression()
         while self.current_token.token_type in [
             "EQUAL",
             "DIFFERENT",
@@ -273,11 +280,33 @@ class Parser:
             "AND",
             "OR",
         ]:
-            self.match(self.current_token.token_type)
-            self.arithmetic_expression()
+            operator = self.current_token.token_type
+            self.match(operator)
 
-    def arithmetic_expression(self):
-        self.factor()
+            right_operand_type = self.arithmetic_expression()
+
+            if expression_type != right_operand_type:
+                raise SemanticError(
+                    f"Type mismatch: Cannot perform {operator} operation between {expression_type} and {right_operand_type}"
+                )
+
+            if operator in ["AND", "OR"]:
+                if expression_type != "BOOL":
+                    raise SemanticError(
+                        f"Invalid operation: {operator} operation not supported on type {expression_type}"
+                    )
+
+                if right_operand_type != "BOOL":
+                    raise SemanticError(
+                        f"Invalid operation: {operator} operation not supported on type {right_operand_type}"
+                    )
+
+            expression_type = "BOOL"
+
+        return expression_type
+
+    def arithmetic_expression(self) -> Type:
+        expression_type = self.factor()
         while self.current_token.token_type in [
             "PLUS",
             "MINUS",
@@ -285,25 +314,43 @@ class Parser:
             "DIVIDE",
             "MODULE",
         ]:
-            self.match(self.current_token.token_type)
-            self.factor()
+            operator = self.current_token.token_type
+            self.match(operator)
+            right_operand_type = self.factor()
 
-    def factor(self):
+            if expression_type != right_operand_type:
+                raise SemanticError(
+                    f"Type mismatch: Cannot perform {operator} operation between {expression_type} and {right_operand_type}"
+                )
+
+            expression_type = "INT"
+
+        return expression_type
+
+    def factor(self) -> Type:
+        expression_type = None
+
         if self.current_token.token_type == "LPAREN":
             self.match("LPAREN")
-            self.expression()
+            expression_type = self.expression()
             self.match("RPAREN")
         elif self.current_token.token_type == "IDENTIFIER":
             if self.tokens[self.index + 1].token_type == "LPAREN":
-                self.function_or_procedure_call_as_argument()
+                expression_type = self.function_or_procedure_call_as_argument()
             else:
+                variable_token = self.current_token
                 self.identifier()
+                expression_type = self.symbol_table[variable_token]["variable_type"]
         elif self.current_token.token_type == "INTEGER":
             self.number()
+            expression_type = "INT"
         elif self.current_token.token_type in ["TRUE", "FALSE"]:
             self.boolean()
+            expression_type = "BOOL"
         else:
             self.error()
+
+        return expression_type
 
     def function_or_procedure_scope(self):
         while self.current_token.token_type not in ["RBRACE", "RETURN"]:
