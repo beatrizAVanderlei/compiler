@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from compiler import Compiler
 
 
@@ -9,10 +11,7 @@ def main(filename):
     compiler.compile()
 
     print("\nTabela de Símbolos:")
-    for identifier, info in compiler.parser.symbol_table.items():
-        print(
-            f"Identifier: {identifier} - Type: {info['variable_type']} - Value: {info['variable_value']} - Line: {info['line']}"
-        )
+    pprint(compiler.parser.symbol_table)
 
 
 if __name__ == "__main__":

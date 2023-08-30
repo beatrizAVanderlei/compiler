@@ -85,6 +85,7 @@ class Lexer:
                             self.symbol_table[token] = {
                                 "variable_type": None,
                                 "variable_value": None,
+                                "scope": None,
                                 "line": self.current_line,
                             }
 
