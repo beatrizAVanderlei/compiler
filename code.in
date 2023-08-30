@@ -3,7 +3,7 @@ function complex_math(int a, int b) -> int {
 }
 
 int y = 20;
-int z = complex_math(x, y);
+int z = complex_math(10, y);
 print(z);
 
 function is_adult(int age) -> bool {
@@ -27,7 +27,7 @@ continue;
 procedure count_until_n(int n, int s) {
     int i = 0;
     while (i < n) {
-        if (i % s == 0 and i != 0) {
+        if ((i % s == 0) and (i != 0)) {
             continue;
         }
         print(i);
@@ -35,4 +35,4 @@ procedure count_until_n(int n, int s) {
     }
 }
 
-count_until_10(20, 2);
+count_until_n(20, 2);

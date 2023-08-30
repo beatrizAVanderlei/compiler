@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from compiler import Compiler
 
 
@@ -9,9 +7,6 @@ def main(filename):
 
     compiler = Compiler(code_string)
     compiler.compile()
-
-    print("\nTabela de Símbolos:")
-    pprint(compiler.parser.symbol_table)
 
 
 if __name__ == "__main__":

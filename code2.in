@@ -35,7 +35,7 @@ function bar(int i, int j, bool t) -> int {
     } else {
         z = z - i - j;
     }
-    return z1;
+    return z;
 }
 
 int m = bar(10, 20, false);
@@ -48,12 +48,32 @@ while ((x < 10) or (x == 100)) {
     }
 }
 
+while (x < 10) {
+    x = x + 1;
+    if (x == 5) {
+        int g = x;
+        break;
+    }
+}
+
+if (x < 10) {
+    int a_;
+}
+
+if (x < 10) {
+    int a_;
+} else {
+    int b_;
+}
+
 procedure baz(int i, int j) {
     int z = i;
-    if (z < 40 and not t) {
+    if (z < 40) {
         z = z + i + j;
     } else {
         z = z - i - j;
     }
     print(z);
 }
+
+baz(10, 20);

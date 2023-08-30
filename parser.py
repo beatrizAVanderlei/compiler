@@ -19,7 +19,8 @@ class Parser:
         self.tokens = None
         self.symbol_table = None
         self.current_token = None
-        self.current_scope = 0
+        self.current_scope = -1
+        self.scopes = []
 
     def parse(self, tokens: list[Token], symbol_table: Dict[Token, Dict[str, Any]]):
         self.tokens = tokens
@@ -31,13 +32,14 @@ class Parser:
             self.error()
 
     def program(self):
-        self.current_scope += 1
+        self.current_scope = 0
+        self.scopes.insert(self.current_scope, {})
 
         self.start_of_program()
         while self.current_token is not None:
             self.start_of_program()
 
-        self.current_scope -= 1
+        self.scopes.pop(self.current_scope)
 
     def start_of_program(self):
         if self.current_token.token_type in ["INT", "BOOL"]:
@@ -73,16 +75,13 @@ class Parser:
         self.identifier()
 
         # check if the variable has already been declared in the current scope or in the parent scopes
-        for token in self.symbol_table.keys():
-            if (
-                token.value == variable_token.value
-                and self.symbol_table[token]["scope"]
-                and self.symbol_table[token]["scope"] <= self.current_scope
-            ):
-                raise SemanticError(
-                    f"Variable '{variable_token.value}' in line {variable_token.line} "
-                    f"already declared in line {token.line}"
-                )
+        for scope in self.scopes:
+            for token in scope.keys():
+                if token.value == variable_token.value:
+                    raise SemanticError(
+                        f"Variable '{variable_token.value}' in line {variable_token.line} "
+                        f"already declared in line {token.line}"
+                    )
 
         if self.current_token.token_type == "ASSIGN":
             self.match("ASSIGN")
@@ -90,9 +89,10 @@ class Parser:
             self.check_types(variable_type, expression_type)
 
         self.match("SEMICOLON")
-        self.symbol_table[variable_token].update(
-            {"variable_type": variable_type, "scope": self.current_scope}
-        )
+        self.scopes[self.current_scope][variable_token] = {
+            "variable_type": variable_type,
+            "scope": self.current_scope,
+        }
 
     def assignment_statement(self):
         variable_token = self.current_token
@@ -102,7 +102,6 @@ class Parser:
         expression_type = self.expression()
         self.check_types(variable_type, expression_type)
         self.match("SEMICOLON")
-        self.symbol_table[variable_token].update({"scope": self.current_scope})
 
     def expression(self) -> Type:
         return self.boolean_expression()
@@ -185,7 +184,6 @@ class Parser:
                 variable_token = self.current_token
                 self.identifier()
                 expression_type = self.get_variable_type(variable_token)
-                self.symbol_table[variable_token].update({"scope": self.current_scope})
 
         elif self.current_token.token_type == "INTEGER":
             self.number()
@@ -216,6 +214,7 @@ class Parser:
 
     def function_or_procedure(self):
         self.current_scope += 1
+        self.scopes.insert(self.current_scope, {})
 
         if self.current_token.token_type == "FUNCTION":
             self.match("FUNCTION")
@@ -236,24 +235,32 @@ class Parser:
             self.function_or_procedure_scope()
             self.return_statement()
             self.match("RBRACE")
-            self.symbol_table[variable_token].update(
-                {
-                    "variable_type": variable_type,
-                    "scope": self.current_scope - 1,
-                    "parameters": list_of_parameters,
-                }
-            )
+            self.scopes[self.current_scope - 1][variable_token] = {
+                "variable_type": variable_type,
+                "scope": self.current_scope - 1,
+                "parameters": list_of_parameters,
+            }
         elif self.current_token.token_type == "PROCEDURE":
             self.match("PROCEDURE")
+            variable_token = self.current_token
             self.identifier()
             self.match("LPAREN")
+
+            list_of_parameters = []
             if self.current_token.token_type != "RPAREN":
-                self.parameters()
+                list_of_parameters = self.parameters()
+
             self.match("RPAREN")
             self.match("LBRACE")
             self.function_or_procedure_scope()
             self.match("RBRACE")
+            self.scopes[self.current_scope - 1][variable_token] = {
+                "variable_type": None,
+                "scope": self.current_scope - 1,
+                "parameters": list_of_parameters,
+            }
 
+        self.scopes.pop(self.current_scope)
         self.current_scope -= 1
 
     def function_or_procedure_scope(self):
@@ -264,15 +271,17 @@ class Parser:
         variable_token = self.current_token
         self.identifier()
 
-        list_of_parameters = []
-        for token in self.symbol_table.keys():
-            if (
-                token.value == variable_token.value
-                and self.symbol_table[token]["scope"]
-                and self.symbol_table[token]["parameters"]
-                and self.symbol_table[token]["scope"] <= self.current_scope
-            ):
-                list_of_parameters = self.symbol_table[token]["parameters"]
+        list_of_parameters = None
+        for scope in self.scopes:
+            for token in scope.keys():
+                if token.value == variable_token.value:
+                    list_of_parameters = scope[token]["parameters"]
+                    break
+
+        if list_of_parameters is None:
+            raise SemanticError(
+                f"Function '{variable_token.value}' in line {variable_token.line} not declared"
+            )
 
         self.match("LPAREN")
 
@@ -306,9 +315,10 @@ class Parser:
         self.tipo()
         variable_token = self.current_token
         self.identifier()
-        self.symbol_table[variable_token].update(
-            {"variable_type": variable_type, "scope": self.current_scope}
-        )
+        self.scopes[self.current_scope][variable_token] = {
+            "variable_type": variable_type,
+            "scope": self.current_scope,
+        }
 
         while self.current_token.token_type == "COLON":
             self.match("COLON")
@@ -318,9 +328,10 @@ class Parser:
             self.tipo()
             variable_token = self.current_token
             self.identifier()
-            self.symbol_table[variable_token].update(
-                {"variable_type": variable_type, "scope": self.current_scope}
-            )
+            self.scopes[self.current_scope][variable_token] = {
+                "variable_type": variable_type,
+                "scope": self.current_scope,
+            }
 
         return list_of_parameters
 
@@ -359,6 +370,7 @@ class Parser:
 
     def conditional_scope(self):
         self.current_scope += 1
+        self.scopes.insert(self.current_scope, {})
 
         while (
             self.current_token.token_type != "RBRACE"
@@ -366,6 +378,7 @@ class Parser:
         ):
             self.start_of_program()
 
+        self.scopes.pop(self.current_scope)
         self.current_scope -= 1
 
     def while_loop(self):
@@ -391,10 +404,12 @@ class Parser:
 
     def loop_scope(self):
         self.current_scope += 1
+        self.scopes.insert(self.current_scope, {})
 
         while self.current_token.token_type != "RBRACE":
             self.start_of_program()
 
+        self.scopes.pop(self.current_scope)
         self.current_scope -= 1
 
     def identifier(self):
@@ -430,21 +445,14 @@ class Parser:
             )
 
     def get_variable_type(self, variable_token: Token) -> Type:
-        for token in self.symbol_table.keys():
-            # check if the variable has already been declared in the current scope or in the parent scopes
-            if (
-                token.value == variable_token.value
-                and self.symbol_table[token]["scope"]
-                and self.symbol_table[token]["scope"] <= self.current_scope
-            ):
-                return self.symbol_table[token]["variable_type"]
-            elif (
-                token.value == variable_token.value
-                and not self.symbol_table[token]["scope"]
-            ):
-                raise SemanticError(
-                    f"Variable '{variable_token.value}' used before declaration at line {token.line}"
-                )
+        for scope in self.scopes:
+            for token in scope.keys():
+                if token.value == variable_token.value:
+                    return scope[token]["variable_type"]
+
+        raise SemanticError(
+            f"Variable '{variable_token.value}' used before declaration at line {variable_token.line}"
+        )
 
     @staticmethod
     def check_types(left_type: Type, right_type: Type):
