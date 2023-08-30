@@ -267,7 +267,7 @@ class Parser:
         while self.current_token.token_type not in ["RBRACE", "RETURN"]:
             self.start_of_program()
 
-    def function_or_procedure_call(self):
+    def function_or_procedure_call(self) -> Type:
         variable_token = self.current_token
         self.identifier()
 
