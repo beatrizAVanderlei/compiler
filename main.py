@@ -10,4 +10,4 @@ def main(filename):
 
 
 if __name__ == "__main__":
-    main("code.in")
+    main("code2.in")

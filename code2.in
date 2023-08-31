@@ -1,0 +1,79 @@
+int x = 10;
+x = 20;
+int y = x;
+
+function foo() -> int {
+    int a = 40;
+    return a;
+}
+
+int a = foo();
+x = a;
+
+int c = foo();
+
+while (x < 10) {
+    x = x + 1;
+    if (x == 5) {
+        int b = x;
+    }
+}
+
+break;
+
+function bar(int i, int j, bool t) -> int {
+    int z = i;
+    if (z < 40 and t) {
+        z = z + i + j;
+        while (z < 100) {
+            z = z + 1;
+            if (z == 50) {
+                int z1 = z;
+                break;
+            }
+        }
+    } else {
+        z = z - i - j;
+    }
+    return z;
+}
+
+int m = bar(10, 20, false);
+
+while ((x < 10) or (x == 100)) {
+    x = x + 1;
+    if (x == 5) {
+        int g = x;
+        break;
+    }
+}
+
+while (x < 10) {
+    x = x + 1;
+    if (x == 5) {
+        int g = x;
+        break;
+    }
+}
+
+if (x < 10) {
+    int a_;
+}
+
+if (x < 10) {
+    int a_;
+} else {
+    int b_;
+}
+
+procedure baz(int i, int j) {
+    int z = i;
+    if (z < 40) {
+        z = z + i + j;
+    } else {
+        z = z - i - j;
+    }
+    print(z);
+}
+
+baz(10, 20);
