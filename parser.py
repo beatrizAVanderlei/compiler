@@ -220,6 +220,15 @@ class Parser:
             self.match("FUNCTION")
             variable_token = self.current_token
             self.identifier()
+
+            for scope in self.scopes:
+                for token in scope.keys():
+                    if token.value == variable_token.value:
+                        raise SemanticError(
+                            f"Function '{variable_token.value}' in line {variable_token.line} "
+                            f"already declared in line {token.line}"
+                        )
+
             self.match("LPAREN")
 
             list_of_parameters = []
@@ -244,6 +253,15 @@ class Parser:
             self.match("PROCEDURE")
             variable_token = self.current_token
             self.identifier()
+
+            for scope in self.scopes:
+                for token in scope.keys():
+                    if token.value == variable_token.value:
+                        raise SemanticError(
+                            f"Procedure '{variable_token.value}' in line {variable_token.line} "
+                            f"already declared in line {token.line}"
+                        )
+
             self.match("LPAREN")
 
             list_of_parameters = []
