@@ -1,4 +1,4 @@
-class ThreeAddressCode:
+class ThreeAddressCodeGenerator:
     def __init__(self):
         pass
 
