@@ -52,6 +52,29 @@ class Parser:
             self.if_statement()
         elif self.current_token.token_type == "WHILE":
             self.while_loop()
+        elif self.current_token.token_type == "IDENTIFIER":
+            if self.tokens[self.index + 1].token_type == "LPAREN":
+                self.function_or_procedure_call()
+                self.match("SEMICOLON")
+            elif self.tokens[self.index + 1].token_type == "ASSIGN":
+                self.assignment_statement()
+            else:
+                self.expression()
+                self.match("SEMICOLON")
+        else:
+            self.error()
+
+    def start_of_while(self):
+        if self.current_token.token_type in ["INT", "BOOL"]:
+            self.declaration_and_assignment()
+        elif self.current_token.token_type == "PRINT":
+            self.print_statement()
+        elif self.current_token.token_type in ["FUNCTION", "PROCEDURE"]:
+            self.function_or_procedure()
+        elif self.current_token.token_type == "IF":
+            self.if_statement_while()
+        elif self.current_token.token_type == "WHILE":
+            self.while_loop()
         elif self.current_token.token_type == "BREAK":
             self.break_statement()
         elif self.current_token.token_type == "CONTINUE":
@@ -386,6 +409,25 @@ class Parser:
             self.conditional_scope()
             self.match("RBRACE")
 
+    def if_statement_while(self):
+        self.match("IF")
+        self.match("LPAREN")
+        expression_type = self.boolean_expression()
+        if expression_type != "BOOL":
+            raise SemanticError(
+                f"Type mismatch: Cannot use {expression_type} in IF statement at line {self.current_token.line}"
+            )
+        self.match("RPAREN")
+        self.match("LBRACE")
+        self.conditional_scope_while()
+        self.match("RBRACE")
+
+        if self.current_token is not None and self.current_token.token_type == "ELSE":
+            self.match("ELSE")
+            self.match("LBRACE")
+            self.conditional_scope_while()
+            self.match("RBRACE")
+
     def conditional_scope(self):
         self.current_scope += 1
         self.scopes.insert(self.current_scope, {})
@@ -395,6 +437,19 @@ class Parser:
             and self.current_token.token_type != "ELSE"
         ):
             self.start_of_program()
+
+        self.scopes.pop(self.current_scope)
+        self.current_scope -= 1
+
+    def conditional_scope_while(self):
+        self.current_scope += 1
+        self.scopes.insert(self.current_scope, {})
+
+        while (
+            self.current_token.token_type != "RBRACE"
+            and self.current_token.token_type != "ELSE"
+        ):
+            self.start_of_while()
 
         self.scopes.pop(self.current_scope)
         self.current_scope -= 1
@@ -425,7 +480,7 @@ class Parser:
         self.scopes.insert(self.current_scope, {})
 
         while self.current_token.token_type != "RBRACE":
-            self.start_of_program()
+            self.start_of_while()
 
         self.scopes.pop(self.current_scope)
         self.current_scope -= 1
