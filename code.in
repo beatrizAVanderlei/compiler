@@ -1,38 +1,160 @@
-function complex_math(int a, int b) -> int {
-    return (a * b) + (10 / (a - b));
-}
+# Initial declarations and assignments
 
-int y = 20;
-int z = complex_math(10, y);
-print(z);
+x = 10
+x = 20
+y = x
 
-function is_adult(int age) -> bool {
-    bool ans = false;
-    if (age >= 18) {
-        ans = true;
-    } else {
-        ans = false;
-    }
-    return ans;
-}
+# Function foo
 
-while (true or false) {
-    int age = 20;
-    print(is_adult(age));
-    break;
-}
+function foo:
+    a = 40
+    return a
+end_function
 
-continue;
+# Calling function foo and storing result in 'a'
+int a = foo();
 
-procedure count_until_n(int n, int s) {
-    int i = 0;
-    while (i < n) {
-        if ((i % s == 0) and (i != 0)) {
-            continue;
+a = call foo
+x = a
+
+# Calling function foo and storing result in 'c'
+c = call foo
+
+while (x < 10) {
+        x = x + 1;
+        if (x == 5) {
+            int b = x;
         }
-        print(i);
-        i = i + 1;
+    }
+
+# While loop 1
+
+while ( expressao ) begin_while
+
+bloco
+
+end_while
+
+
+expressao -> jogar numa lista
+
+arquivo (L{self.label} t0 = expressao:)
+self.label = self.label + 1
+arquivo (if false t0 goto L{self.label)
+
+
+L1: t1 = x < 10
+    ifFalse t1 goto L2
+    x = x + 1
+    t2 = x == 5
+    ifTrue t2 goto L3
+    goto L1
+L3: b = x
+    goto L1
+L2:
+
+# Function bar
+
+function bar(int i, int j, bool t) -> int {
+        int z = i;
+        if (z < 40 and t) {
+            z = z + i + j;
+            while (z < 100) {
+                z = z + 1;
+                if (z == 50) {
+                    int z1 = z;
+                    break;
+                }
+            }
+        } else {
+            z = z - i - j;
+        }
+        return z;
+    }
+
+function bar(i, j, t):
+    z = i
+    t3 = z < 40
+    t4 = t3 and t
+    ifFalse t4 goto L4
+    z = z + i + j
+L5: t5 = z < 100
+    ifFalse t5 goto L6
+    z = z + 1
+    t6 = z == 50
+    ifTrue t6 L7
+    goto L5
+L7: z1 = z
+    goto L6
+L6: nop
+    return z
+L4: z = z - i - j
+    return z
+end_function
+
+# Calling function bar and storing result in 'm'
+m = call bar(10, 20, false)
+
+while ((x < 10) or (x == 100)) {
+    x = x + 1;
+    if (x == 5) {
+        int g = x;
+        break;
     }
 }
 
-count_until_n(20, 2);
+# While loop 2
+L8: t7 = x < 10
+    t8 = x == 100
+    t9 = t7 or t8
+    ifFalse t9 goto L9
+    x = x + 1
+    t10 = x == 5
+    ifTrue t10 goto L10
+    goto L8
+L10: g = x
+    goto L9
+L9: nop
+
+# While loop 3 (same as While loop 1)
+# Since it's repeated, the 3-address code remains same.
+
+# Single if statement
+L11: t11 = x < 10
+    ifFalse t11 goto L12
+    a_ = undef
+    goto L12
+L12: nop
+
+# If-else statement
+L13: t12 = x < 10
+    ifFalse t12 goto L14
+    a_ = undef
+    goto L15
+L14: b_ = undef
+L15: nop
+
+# Procedure baz
+procedure baz(i, j):
+    z = i
+    t13 = z < 40
+    ifFalse t13 L16
+    z = z + i + j
+    goto L17
+L16: z = z - i - j
+L17: print z
+end_procedure
+
+# Calling procedure baz
+call baz(10, 20)
+
+# Complex expression
+
+int teste = x + 1 + 20 * 5 / 100 * 3 - 50
+t14 = 20 * 5
+t15 = x + 1
+t16 = t15 + t14
+teste = t16
+
+# Boolean assignment
+teste2 = true

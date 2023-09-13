@@ -58,3 +58,48 @@ class TestCompiler:
         compiler = Compiler(code)
         with pytest.raises(SyntaxError):
             compiler.compile()
+
+    def test_unccessful_procedure(self):
+        code = """
+        procedure int sum(int a, int b) {
+            a+b;
+        }
+        """
+        compiler = Compiler(code)
+        with pytest.raises(SyntaxError):
+            compiler.compile()
+
+    def test_unccessful_while(self):
+        code = """
+        while(a>b){
+        ;
+        """
+        compiler = Compiler(code)
+        with pytest.raises(SyntaxError):
+            compiler.compile()
+
+    def test_unccessful_if(self):
+        code = """
+        else(){}
+        """
+        compiler = Compiler(code)
+        with pytest.raises(SyntaxError):
+            compiler.compile()
+
+    def test_unccessful_declaration(self):
+        code = """
+        int x
+        bool;
+        """
+        compiler = Compiler(code)
+        with pytest.raises(SyntaxError):
+            compiler.compile()
+
+    def test_unccessful_atribuation(self):
+        code = """
+        x = int;
+        int x = a+
+        """
+        compiler = Compiler(code)
+        with pytest.raises(SyntaxError):
+            compiler.compile()

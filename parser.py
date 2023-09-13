@@ -21,6 +21,7 @@ class Parser:
         self.current_token = None
         self.current_scope = -1
         self.scopes = []
+        self.instructions = []
 
     def parse(self, tokens: list[Token], symbol_table: Dict[Token, Dict[str, Any]]):
         self.tokens = tokens
@@ -95,6 +96,7 @@ class Parser:
         variable_type = self.current_token.token_type
         self.tipo()
         variable_token = self.current_token
+        self.instructions.append(self.current_token)
         self.identifier()
 
         # check if the variable has already been declared in the current scope or in the parent scopes
@@ -107,11 +109,14 @@ class Parser:
                     )
 
         if self.current_token.token_type == "ASSIGN":
+            self.instructions.append(self.current_token)
             self.match("ASSIGN")
             expression_type = self.expression()
             self.check_types(variable_type, expression_type)
 
-        self.match("SEMICOLON")
+        if self.current_token.token_type == "SEMICOLON":
+            self.match("SEMICOLON")
+
         self.scopes[self.current_scope][variable_token] = {
             "variable_type": variable_type,
             "scope": self.current_scope,
@@ -119,8 +124,10 @@ class Parser:
 
     def assignment_statement(self):
         variable_token = self.current_token
+        self.instructions.append(self.current_token)
         self.identifier()
         variable_type = self.get_variable_type(variable_token)
+        self.instructions.append(self.current_token)
         self.match("ASSIGN")
         expression_type = self.expression()
         self.check_types(variable_type, expression_type)
@@ -142,6 +149,7 @@ class Parser:
             "OR",
         ]:
             operator = self.current_token.token_type
+            self.instructions.append(self.current_token)
             self.match(operator)
 
             right_operand_type = self.arithmetic_expression()
@@ -179,6 +187,7 @@ class Parser:
             "MODULE",
         ]:
             operator = self.current_token.token_type
+            self.instructions.append(self.current_token)
             self.match(operator)
             right_operand_type = self.factor()
 
@@ -196,8 +205,10 @@ class Parser:
         expression_type = None
 
         if self.current_token.token_type == "LPAREN":
+            self.instructions.append(self.current_token)
             self.match("LPAREN")
             expression_type = self.expression()
+            self.instructions.append(self.current_token)
             self.match("RPAREN")
         elif self.current_token.token_type == "IDENTIFIER":
             if self.tokens[self.index + 1].token_type == "LPAREN":
@@ -205,16 +216,20 @@ class Parser:
 
             else:
                 variable_token = self.current_token
+                self.instructions.append(self.current_token)
                 self.identifier()
                 expression_type = self.get_variable_type(variable_token)
 
         elif self.current_token.token_type == "INTEGER":
+            self.instructions.append(self.current_token)
             self.number()
             expression_type = "INT"
         elif self.current_token.token_type in ["TRUE", "FALSE"]:
+            self.instructions.append(self.current_token)
             self.boolean()
             expression_type = "BOOL"
         elif self.current_token.token_type == "NOT":
+            self.instructions.append(self.current_token)
             self.match("NOT")
             expression_type = self.factor()
             if expression_type != "BOOL":
@@ -228,10 +243,13 @@ class Parser:
         return expression_type
 
     def print_statement(self):
+        self.instructions.append(self.current_token)
         self.match("PRINT")
+        self.instructions.append(self.current_token)
         self.match("LPAREN")
         if self.current_token.token_type != "RPAREN":
             self.argument_list()
+        self.instructions.append(self.current_token)
         self.match("RPAREN")
         self.match("SEMICOLON")
 
@@ -240,8 +258,10 @@ class Parser:
         self.scopes.insert(self.current_scope, {})
 
         if self.current_token.token_type == "FUNCTION":
+            self.instructions.append(self.current_token)
             self.match("FUNCTION")
             variable_token = self.current_token
+            self.instructions.append(self.current_token)
             self.identifier()
 
             for scope in self.scopes:
@@ -252,20 +272,26 @@ class Parser:
                             f"already declared in line {token.line}"
                         )
 
+            self.instructions.append(self.current_token)
             self.match("LPAREN")
 
             list_of_parameters = []
             if self.current_token.token_type != "RPAREN":
                 list_of_parameters = self.parameters()
 
+            self.instructions.append(self.current_token)
             self.match("RPAREN")
             self.match("ARROW")
             variable_type = self.current_token.token_type
             self.tipo()
+            temp_token = Token("BEGINFUNCTION", "begin_function", self.current_token.line)
+            self.instructions.append(temp_token)
             self.match("LBRACE")
 
             self.function_or_procedure_scope()
             self.return_statement()
+            temp_token = Token("ENDFUNCTION", "end_function", self.current_token.line)
+            self.instructions.append(temp_token)
             self.match("RBRACE")
             self.scopes[self.current_scope - 1][variable_token] = {
                 "variable_type": variable_type,
@@ -273,8 +299,10 @@ class Parser:
                 "parameters": list_of_parameters,
             }
         elif self.current_token.token_type == "PROCEDURE":
+            self.instructions.append(self.current_token)
             self.match("PROCEDURE")
             variable_token = self.current_token
+            self.instructions.append(self.current_token)
             self.identifier()
 
             for scope in self.scopes:
@@ -285,15 +313,21 @@ class Parser:
                             f"already declared in line {token.line}"
                         )
 
+            self.instructions.append(self.current_token)
             self.match("LPAREN")
 
             list_of_parameters = []
             if self.current_token.token_type != "RPAREN":
                 list_of_parameters = self.parameters()
 
+            self.instructions.append(self.current_token)
             self.match("RPAREN")
+            temp_token = Token("BEGINPROCEDURE", "begin_procedure", self.current_token.line)
+            self.instructions.append(temp_token)
             self.match("LBRACE")
             self.function_or_procedure_scope()
+            temp_token = Token("ENDPROCEDURE", "end_procedure", self.current_token.line)
+            self.instructions.append(temp_token)
             self.match("RBRACE")
             self.scopes[self.current_scope - 1][variable_token] = {
                 "variable_type": None,
@@ -310,6 +344,7 @@ class Parser:
 
     def function_or_procedure_call(self) -> Type:
         variable_token = self.current_token
+        self.instructions.append(self.current_token)
         self.identifier()
 
         list_of_parameters = None
@@ -324,11 +359,13 @@ class Parser:
                 f"Function '{variable_token.value}' in line {variable_token.line} not declared"
             )
 
+        self.instructions.append(self.current_token)
         self.match("LPAREN")
 
         list_of_arguments = []
         if self.current_token.token_type != "RPAREN":
             list_of_arguments = self.argument_list()
+        self.instructions.append(self.current_token)
         self.match("RPAREN")
 
         if len(list_of_parameters) != len(list_of_arguments):
@@ -355,6 +392,7 @@ class Parser:
 
         self.tipo()
         variable_token = self.current_token
+        self.instructions.append(self.current_token)
         self.identifier()
         self.scopes[self.current_scope][variable_token] = {
             "variable_type": variable_type,
@@ -362,12 +400,14 @@ class Parser:
         }
 
         while self.current_token.token_type == "COLON":
+            self.instructions.append(self.current_token)
             self.match("COLON")
             variable_type = self.current_token.token_type
             list_of_parameters.append(variable_type)
 
             self.tipo()
             variable_token = self.current_token
+            self.instructions.append(self.current_token)
             self.identifier()
             self.scopes[self.current_scope][variable_token] = {
                 "variable_type": variable_type,
@@ -380,52 +420,78 @@ class Parser:
         list_of_arguments = [self.expression()]
 
         while self.current_token.token_type == "COLON":
+            self.instructions.append(self.current_token)
             self.match("COLON")
             list_of_arguments.append(self.expression())
 
         return list_of_arguments
 
     def return_statement(self):
+        self.instructions.append(self.current_token)
         self.match("RETURN")
         self.expression()
         self.match("SEMICOLON")
 
     def if_statement(self):
+        self.instructions.append(self.current_token)
         self.match("IF")
+        self.instructions.append(self.current_token)
         self.match("LPAREN")
         expression_type = self.boolean_expression()
         if expression_type != "BOOL":
             raise SemanticError(
                 f"Type mismatch: Cannot use {expression_type} in IF statement at line {self.current_token.line}"
             )
+        self.instructions.append(self.current_token)
         self.match("RPAREN")
+        temp_token = Token("BEGINIF", "begin_if", self.current_token.line)
+        self.instructions.append(temp_token)
         self.match("LBRACE")
         self.conditional_scope()
+        temp_token = Token("ENDIF", "end_if", self.current_token.line)
+        self.instructions.append(temp_token)
         self.match("RBRACE")
 
         if self.current_token is not None and self.current_token.token_type == "ELSE":
+            self.instructions.append(self.current_token)
             self.match("ELSE")
+            temp_token = Token("BEGINELSE", "begin_else", self.current_token.line)
+            self.instructions.append(temp_token)
             self.match("LBRACE")
             self.conditional_scope()
+            temp_token = Token("ENDELSE", "end_else", self.current_token.line)
+            self.instructions.append(temp_token)
             self.match("RBRACE")
 
     def if_statement_while(self):
+        self.instructions.append(self.current_token)
         self.match("IF")
+        self.instructions.append(self.current_token)
         self.match("LPAREN")
         expression_type = self.boolean_expression()
         if expression_type != "BOOL":
             raise SemanticError(
                 f"Type mismatch: Cannot use {expression_type} in IF statement at line {self.current_token.line}"
             )
+        self.instructions.append(self.current_token)
         self.match("RPAREN")
+        temp_token = Token("BEGINIF", "begin_if", self.current_token.line)
+        self.instructions.append(temp_token)
         self.match("LBRACE")
         self.conditional_scope_while()
+        temp_token = Token("ENDIF", "end_if", self.current_token.line)
+        self.instructions.append(temp_token)
         self.match("RBRACE")
 
         if self.current_token is not None and self.current_token.token_type == "ELSE":
+            self.instructions.append(self.current_token)
             self.match("ELSE")
+            temp_token = Token("BEGINELSE", "begin_else", self.current_token.line)
+            self.instructions.append(temp_token)
             self.match("LBRACE")
             self.conditional_scope_while()
+            temp_token = Token("ENDELSE", "end_else", self.current_token.line)
+            self.instructions.append(temp_token)
             self.match("RBRACE")
 
     def conditional_scope(self):
@@ -455,23 +521,32 @@ class Parser:
         self.current_scope -= 1
 
     def while_loop(self):
+        self.instructions.append(self.current_token)
         self.match("WHILE")
+        self.instructions.append(self.current_token)
         self.match("LPAREN")
         expression_type = self.boolean_expression()
         if expression_type != "BOOL":
             raise SemanticError(
                 f"Type mismatch: Cannot use {expression_type} in WHILE statement at line {self.current_token.line}"
             )
+        self.instructions.append(self.current_token)
         self.match("RPAREN")
+        temp_token = Token("BEGINLOOP", "begin_loop", self.current_token.line)
+        self.instructions.append(temp_token)
         self.match("LBRACE")
         self.loop_scope()
+        temp_token = Token("ENDLOOP", "end_loop", self.current_token.line)
+        self.instructions.append(temp_token)
         self.match("RBRACE")
 
     def break_statement(self):
+        self.instructions.append(self.current_token)
         self.match("BREAK")
         self.match("SEMICOLON")
 
     def continue_statement(self):
+        self.instructions.append(self.current_token)
         self.match("CONTINUE")
         self.match("SEMICOLON")
 

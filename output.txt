@@ -1,0 +1,47 @@
+x = 10 
+x = 1000 
+y = x 
+
+function foo():
+a = 40 
+return a 
+end_function
+
+a = call foo()
+
+L0:
+t0 = x < 10
+ifFalse t0 go to L1
+t0 = x + 1
+x = t0
+t0 = x == 5 and true
+ifFalse t0 go to L2
+g = x 
+go to L1
+go to L0
+L2:
+g = 10 
+go to L0
+go to L0
+L1:
+
+
+procedure baz(i, j):
+z = i 
+
+t0 = z < 40
+ifFalse t0 go to L4
+t0 = z + i
+t1 = t0 + j
+z = t1
+go to L5
+L4:
+t0 = z - i
+t1 = t0 - j
+z = t1
+go to L5
+L5:
+print ( z ) 
+end_procedure
+
+call baz(10, 20)
